@@ -6,7 +6,7 @@ class Database:
         self.connection = None
         try:
             self.connection = pymysql.connect(
-                host='localhost',
+                host='1.220.247.75',
                 # host='svc.sel5.cloudtype.app',
                 # port=31484,
                 database='test',  # test 데이터베이스 사용
