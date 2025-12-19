@@ -4,65 +4,57 @@ from pymysql import Error
 class Database:
     def __init__(self):
         self.connection = None
+        self.connect()
+
+    def connect(self):
+        """데이터베이스 연결 및 재연결 로직"""
         try:
             self.connection = pymysql.connect(
                 host='mariadb',
-                # host='svc.sel5.cloudtype.app',
                 port=3306,
-                database='test',  # test 데이터베이스 사용
+                database='test',
                 user='root',
-                password='a123',  # mariadb 설치 당시의 패스워드, 실제 환경에서는 보안을 위해 환경변수 등을 사용
+                password='a123',
                 charset='utf8mb4',
-                cursorclass=pymysql.cursors.DictCursor   # 쿼리 결과를 딕셔너리로 변환
+                cursorclass=pymysql.cursors.DictCursor,
+                autocommit=True  # 자동으로 커밋하도록 설정
             )
             print("MariaDB에 성공적으로 연결되었습니다.")
         except Error as e:
-            print(f"MariaDB 연결 중 오류 발생: {e}")
+            print(f"MariaDB 연결 오류: {e}")
+
+    def is_connected(self):
+        """연결 상태 확인 및 복구"""
+        try:
+            self.connection.ping(reconnect=True)
+            return True
+        except:
+            return False
 
     def save_bmi_record(self, weight, height, bmi, category):
-        """BMI 기록을 데이터베이스에 저장"""
         try:
-            if self.connection is None:
-                print("데이터베이스 연결이 없습니다.")
-                return False
+            if not self.is_connected():
+                self.connect()
                 
             with self.connection.cursor() as cursor:
-                query = """
-                INSERT INTO bmi_records (weight, height, bmi, category)
-                VALUES (%s, %s, %s, %s)
-                """
+                query = "INSERT INTO bmi_records (weight, height, bmi, category) VALUES (%s, %s, %s, %s)"
                 cursor.execute(query, (weight, height, bmi, category))
-            
-            self.connection.commit()
-            print("BMI 기록이 성공적으로 저장되었습니다.")
+            # autocommit=True 설정으로 self.connection.commit() 생략 가능
+            print("데이터 저장 성공!")
             return True
         except Error as e:
-            print(f"데이터 저장 중 오류 발생: {e}")
+            print(f"저장 오류: {e}")
             return False
 
     def get_bmi_records(self, limit=10):
-        """최근 BMI 기록을 가져옵니다"""
         try:
-            if self.connection is None:
-                print("데이터베이스 연결이 없습니다.")
-                return []
+            if not self.is_connected():
+                self.connect()
                 
             with self.connection.cursor() as cursor:
-                query = """
-                SELECT * FROM bmi_records
-                ORDER BY created_at DESC
-                LIMIT %s
-                """
+                query = "SELECT * FROM bmi_records ORDER BY created_at DESC LIMIT %s"
                 cursor.execute(query, (limit,))
-                records = cursor.fetchall()
-            
-            return records
+                return cursor.fetchall()
         except Error as e:
-            print(f"데이터 조회 중 오류 발생: {e}")
+            print(f"조회 오류: {e}")
             return []
-
-    def close(self):
-        """데이터베이스 연결 종료"""
-        if self.connection:
-            self.connection.close()
-            print("MariaDB 연결이 종료되었습니다.")
