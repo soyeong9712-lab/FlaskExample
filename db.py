@@ -8,7 +8,7 @@ class Database:
             self.connection = pymysql.connect(
                 host='mariadb',
                 # host='svc.sel5.cloudtype.app',
-                # port=3306,
+                port=3306,
                 database='test',  # test 데이터베이스 사용
                 user='root',
                 password='a123',  # mariadb 설치 당시의 패스워드, 실제 환경에서는 보안을 위해 환경변수 등을 사용
